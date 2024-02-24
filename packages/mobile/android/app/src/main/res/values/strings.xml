@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Athan Reminder</string>
+    <string name="title_activity_main">Athan Reminder</string>
+    <string name="package_name">com.athanreminder.app</string>
+    <string name="custom_url_scheme">com.athanreminder.app</string>
+</resources>
