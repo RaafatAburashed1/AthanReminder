@@ -37,6 +37,9 @@
 	"dependencies": {
 		"@capacitor/android": "^5.7.0",
 		"@capacitor/core": "^5.7.0",
-		"@capacitor/ios": "^5.7.0"
+		"@capacitor/geolocation": "^5.0.7",
+		"@capacitor/ios": "^5.7.0",
+		"@supabase/supabase-js": "^2.39.7",
+		"dotenv": "^16.4.5"
 	}
 }
