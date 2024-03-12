@@ -4,9 +4,13 @@
 	import type { DailyPrayer } from '../types/DailyPrayer';
 	import '../assets/AboveClouds.png';
 	import { getPrayerTimes } from './components/getPrayerTimes';
-	import { TodaysPrayer } from '../types/DailyPrayer';
+	import type { TodaysPrayer } from '../types/DailyPrayer';
 	import { Capacitor } from '@capacitor/core';
 	import type { NotificationType, Notifications } from '../types/Notifications';
+	import emblaCarouselSvelte from 'embla-carousel-svelte';
+	let emblaApi: any;
+	let options = { loop: false };
+	let plugins: any = [];
 
 	let prayerTimes: DailyPrayer | undefined;
 	let currentCity: string, currentState: string, currentCountry: string;
@@ -18,8 +22,38 @@
 	let intervalId: any;
 	let timeRemaining: string;
 	let todayFinished: boolean = false;
+	let displayedPrayers: TodaysPrayer = {
+		fajr: { time: '', notification: 'Ring' },
+		sunrise: { time: '', notification: 'Ring' },
+		dhuhr: { time: '', notification: 'Ring' },
+		asr: { time: '', notification: 'Ring' },
+		maghrib: { time: '', notification: 'Ring' },
+		isha: { time: '', notification: 'Ring' }
+	};
 
 	let notificationSettings: Notifications;
+
+	function onInit(event: any) {
+		emblaApi = event.detail;
+		console.log(emblaApi.slideNodes()); // Access API
+
+		// Listen for the select event
+		emblaApi.on('select', () => {
+			console.log('Slide changed to:', emblaApi.selectedScrollSnap());
+			displayedPrayers = {
+				fajr: { time: '5:00 AM', notification: 'Ring' },
+				sunrise: { time: '6:00 AM', notification: 'Ring' },
+				dhuhr: { time: '1:00 PM', notification: 'Ring' },
+				asr: { time: '4:00 PM', notification: 'Ring' },
+				maghrib: { time: '7:00 PM', notification: 'Ring' },
+				isha: { time: '9:00 PM', notification: 'Ring' }
+			};
+			// Call your function here
+			onSlideChange();
+		});
+	}
+
+	function onSlideChange() {}
 
 	const setCityStateCountry = (location: string) => {
 		const locationArray = location!.split('-');
@@ -39,7 +73,6 @@
 	};
 	//find which prayer is next
 	const findNextPrayer = async () => {
-		console.log('we are here');
 		const currentTime = moment();
 		for (const [prayer, timeString] of Object.entries(prayerTimes!)) {
 			if (prayer === 'hijriDate' || prayer === 'hijriMonth') continue;
@@ -52,7 +85,6 @@
 			}
 		}
 		if (nextPrayer === undefined) {
-			console.log('we are here 2');
 			todayFinished = true;
 			const nextDayPrayer = await getPrayerTimes(moment().add(1, 'days').format('DD-MM-YYYY'));
 			nextPrayer = 'Fajr';
@@ -76,7 +108,7 @@
 			const hours = Math.floor(moment.duration(diff).asHours());
 			const minutes = moment.duration(diff).minutes();
 
-			timeRemaining = `${hours}h ${minutes + 1}m`;
+			timeRemaining = `${hours} hr ${minutes + 1} min`;
 		}
 	};
 
@@ -96,15 +128,23 @@
 			//update time remaining unti next prayer every 3 seconds
 			updateTimeRemaining();
 			intervalId = setInterval(updateTimeRemaining, 3000);
+			for (const [prayer, timeString] of Object.entries(prayerTimes!)) {
+				if (prayer === 'hijriDate' || prayer === 'hijriMonth') continue;
+				displayedPrayers[prayer as keyof TodaysPrayer] = {
+					time: timeString,
+					notification: getNotificationSetting(prayer)
+				};
+			}
 		}
 	};
 
-	const handleNotificationsButtonClick = (prayer: string) => (event: MouseEvent) => {
+	const handleNotificationsButtonClick = (prayer: string, nt: string) => (event: MouseEvent) => {
 		const currentNotificationType: NotificationType =
 			notificationSettings[prayer as keyof Notifications];
+
 		console.log(currentNotificationType, 'currentNotificationType');
-		let newNotificationType;
-		switch (currentNotificationType) {
+		let newNotificationType: NotificationType;
+		switch (nt) {
 			case 'Ring':
 				newNotificationType = 'Vibrate';
 				break;
@@ -112,18 +152,18 @@
 				newNotificationType = 'Silent';
 				break;
 			case 'Silent':
-				newNotificationType = 'None';
-				break;
-			case 'None':
 				newNotificationType = 'Ring';
 				break;
 			default:
 				console.error(`Unknown notification type: ${currentNotificationType}`);
 				return;
 		}
-		notificationSettings[prayer as keyof Notifications] = newNotificationType as NotificationType;
-		console.log(notificationSettings, 'notificationSettings');
+		//update the localstorage preference of notification type
+		notificationSettings[prayer as keyof Notifications] = newNotificationType;
 		localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+		//update the UI for displayedPrayers notification type
+		displayedPrayers[prayer as keyof TodaysPrayer].notification =
+			newNotificationType as NotificationType;
 	};
 
 	const getNotificationSetting = (prayer: string) => {
@@ -137,7 +177,6 @@
 	onMount(async () => {
 		loading = true;
 		prayerTimes = await getPrayerTimes(moment().format('DD-MM-YYYY'));
-		prepareData();
 		const getNoti: string | null = localStorage.getItem('notificationSettings');
 		if (getNoti === null) {
 			notificationSettings = {
@@ -152,7 +191,7 @@
 		} else {
 			notificationSettings = JSON.parse(getNoti);
 		}
-		console.log(notificationSettings, 'notificationSettings');
+		prepareData();
 		loading = false;
 	});
 </script>
@@ -170,51 +209,71 @@
 		{:else if errorState}
 			<div>Error...</div>
 		{:else}
-			<div class="text-red-400">
-				{capitalizeFirstLetter(currentCity)}
-				{capitalizeFirstLetter(currentCountry)}
-			</div>
-			<div class="text-red-400">{currentDate}</div>
-			<div class="text-red-400">
-				{prayerTimes?.hijriMonth}
-				{cleanHijriDateString}
+			<div class="flex justify-between">
+				<div>
+					<div class="text-red-400">{currentDate}</div>
+					<div class="text-red-400">
+						{prayerTimes?.hijriMonth}
+						{cleanHijriDateString}
+					</div>
+				</div>
+				<div class="text-red-400">
+					{capitalizeFirstLetter(currentCity)}
+					{capitalizeFirstLetter(currentCountry)}
+				</div>
 			</div>
 
 			<div class=" w-full glass h-32 mb-10">
 				<article class=" flex flex-row ml-2 pt-2 items-center">
-					<h1 class="mr-10 text-white font-extrabold text-5xl">
+					<h1 class="mr-10 text-white font-extrabold text-4xl">
 						{capitalizeFirstLetter(nextPrayer)}
 					</h1>
-					<h1 class="text-white text-4xl font-semibold mt-2">
+					<h1 class="text-white text-3xl font-semibold mt-1">
 						{nextPrayerTime}
 					</h1>
 				</article>
-				<article class=" flex flex-row ml-2 pt-2">
-					<h2 class="mr-4 text-white">Time:</h2>
-					<h2 class="text-white font-mono">
+				<article class=" flex flex-row ml-3 mt-5 items-center">
+					<h2 class="mr-2 text-white font-medium text-xl">Athan In:</h2>
+					<h2 class="text-white font-mono mt-1">
 						{timeRemaining}
 					</h2>
 				</article>
 			</div>
+			<div class="flex mb-4 text-center">
+				<div class="flex-auto">left</div>
+				<div class="flex-auto">
+					<div class="text-red-400">{currentDate}</div>
+					<div class="text-red-400">
+						{prayerTimes?.hijriMonth}
+						{cleanHijriDateString}
+					</div>
+				</div>
+				<div class="flex-auto">right</div>
+			</div>
 			<div class="flex w-full justify-center align-middle">
 				<article class="w-11/12 text-center glass text-white pl-2">
-					{#if prayerTimes}
-						{#each Object.entries(prayerTimes) as [prayer, time]}
+					{#if displayedPrayers}
+						{#each Object.entries(displayedPrayers) as [prayer, values]}
 							{#if prayer !== 'hijriDate' && prayer !== 'hijriMonth'}
 								<div class="flex justify-between items-center mb-5 mt-5">
 									<h4 class="">{capitalizeFirstLetter(prayer)}:</h4>
 									<h4 class="flex items-center mr-2 font-mono">
-										<div>{time}</div>
-										<button class=" btn-xs ml-2" on:click={handleNotificationsButtonClick(prayer)}>
+										<div>{values.time}</div>
+										<button
+											class=" btn-xs ml-2 w-10"
+											on:click={handleNotificationsButtonClick(prayer, values.notification)}
+										>
 											<!-- <img class="w-5 h-5" src="src/assets/volume.png" alt="Volume" /> -->
-											{#if getNotificationSetting(prayer) === 'Ring'}
-												<img class="w-5 h-5" src="src/assets/volume.png" alt="Volume" />
-											{:else if getNotificationSetting(prayer) === 'Vibrate'}
-												<img class="w-5 h-5" src="src/assets/vibrate.png" alt="Vibrate" />
-											{:else if getNotificationSetting(prayer) === 'Silent'}
-												<img class="w-5 h-5" src="src/assets/mute.png" alt="Silent" />
+											{#if values.notification === 'Ring'}
+												<img class="w-6 h-6" src="src/assets/volume.png" alt="Volume" />
+											{:else if values.notification === 'Vibrate'}
+												<img class="w-7 h-7" src="src/assets/vib.png" alt="Vibrate" />
 											{:else}
-												X
+												<img
+													class="w-7 h-7"
+													src="src/assets/silent.png"
+													alt="notifications-disabled"
+												/>
 											{/if}
 										</button>
 									</h4>
@@ -224,6 +283,26 @@
 					{/if}
 				</article>
 			</div>
+			<div class="embla" use:emblaCarouselSvelte={{ options, plugins }} on:emblaInit={onInit}>
+				<div class="embla__container">
+					<div class="embla__slide">Slide 1</div>
+					<div class="embla__slide">Slide 2</div>
+					<div class="embla__slide">Slide 3</div>
+				</div>
+			</div>
 		{/if}
 	</div>
 </main>
+
+<style>
+	.embla {
+		overflow: hidden;
+	}
+	.embla__container {
+		display: flex;
+	}
+	.embla__slide {
+		flex: 0 0 100%;
+		min-width: 0;
+	}
+</style>

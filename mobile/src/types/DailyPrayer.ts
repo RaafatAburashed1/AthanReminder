@@ -22,8 +22,6 @@ export type DailyPrayerData = {
 
 
 export type TodaysPrayer = {
-    hijriMonth: string;
-    hijriDate: string;
     fajr: PrayerTimeAndNotification;
     sunrise: PrayerTimeAndNotification;
     dhuhr: PrayerTimeAndNotification;

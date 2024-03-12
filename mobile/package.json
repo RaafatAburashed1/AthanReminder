@@ -42,6 +42,7 @@
 		"@capacitor/ios": "^5.7.0",
 		"@supabase/supabase-js": "^2.39.7",
 		"dotenv": "^16.4.5",
+		"embla-carousel-svelte": "^8.0.0",
 		"moment": "^2.30.1"
 	}
 }

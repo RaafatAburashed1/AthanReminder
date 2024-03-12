@@ -113,17 +113,16 @@ const storePrayerTimesInDB = async (prayerMapping: Map<string, DailyPrayer>) => 
 
 const getPrayerTimesFromApi = async (): Promise<Map<string, DailyPrayer>> => {
 	console.log('CALLING PRAYER API...');
-	const response = await fetch(
-		`${config.prayerApi(currentCity, currentCountry, currentYear, currentMonth).url}?location=${location}`
-	);
-	const data = await response.json();
-
 	const nextMonthYear = nextMonth === '01' ? moment(currentYear).add(1, 'year').format('YYYY') : currentYear;
-	const r2 = await fetch(
+	const urls = [
+		`${config.prayerApi(currentCity, currentCountry, currentYear, currentMonth).url}?location=${location}`,
 		`${config.prayerApi(currentCity, currentCountry, nextMonthYear, nextMonth).url}?location=${location}`
-	);
+	];
 
-	const data2 = await r2.json();
+	const requests = urls.map(url => fetch(url).then(response => response.json()));
+
+	const [data, data2] = await Promise.all(requests);
+
 	// const data = testApi;
 	//clean up the data, save it to cache and database
 	const prayerMapping: Map<string, DailyPrayer> = new Map();
