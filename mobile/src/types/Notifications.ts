@@ -1,12 +1,8 @@
 export type NotificationType = 'Ring' | 'Vibrate' | 'Silent' | 'None';
+// type prayers = 'fajr' | 'sunrise' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
 
 export type Notifications = {
-    fajr: NotificationType;
-    sunrise: NotificationType;
-    dhuhr: NotificationType;
-    asr: NotificationType;
-    maghrib: NotificationType;
-    isha: NotificationType;
+    [key in string]: NotificationType;
 }
 
 
