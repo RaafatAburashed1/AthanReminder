@@ -5,7 +5,7 @@ const config = {
         url: `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${PUBLIC_GOOGLE_API_KEY}`
     }),
     prayerApi: (city: string, country: string, year: string, month: string) => ({
-        url: `http://api.aladhan.com/v1/calendarByCity/${year}/${month}?city=${city}&country=${country}`
+        url: `https://api.aladhan.com/v1/calendarByCity/${year}/${month}?city=${city}&country=${country}`
     })
 }
 

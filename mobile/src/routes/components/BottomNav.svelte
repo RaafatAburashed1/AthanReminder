@@ -26,7 +26,7 @@
 		class="btm-nav"
 		style="margin-bottom: {Capacitor.getPlatform() === 'ios'
 			? 'env(safe-area-inset-bottom)'
-			: '20px'}"
+			: '15px'}"
 	>
 		<button
 			class="text-accent"

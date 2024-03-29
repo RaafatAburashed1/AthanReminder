@@ -1,4 +1,4 @@
-export type NotificationType = 'Ring' | 'Vibrate' | 'Silent' | 'None';
+export type NotificationType = 'Athan' | 'Vibrate' | 'Silent' | 'Beep';
 // type prayers = 'fajr' | 'sunrise' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
 
 export type Notifications = {
