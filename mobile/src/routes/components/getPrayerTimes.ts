@@ -53,6 +53,7 @@ export const getPrayerTimes = async (cd: string): Promise<DailyPrayer | undefine
 		await storePrayerTimesInDB(prayerTimesFromApi);
 
 		// return todays prayer time
+		console.log('returning from api ', prayerTimesFromApi.get(currentDate))
 		return prayerTimesFromApi.get(currentDate);
 	} catch (error) {
 		console.log(error, 'error');
@@ -85,38 +86,43 @@ const checkCacheForData = async (): Promise<DailyPrayer | undefined> => {
 };
 
 const getPrayerTimesFromDB = async (): Promise<DailyPrayer | undefined> => {
-	const { data } = await supabase.from('prayer_timings').select().eq('location', location);
-	//if data is found and not expired return todays prayer times
-	if (data && data.length > 0) {
-		const expiresAt = moment(data[0].expires_at, 'DD-MM-YYYY');
-		const cd = moment(currentDate, 'DD-MM-YYYY');
-		if (cd <= expiresAt) {
-			const prayerMapping = new Map<string, DailyPrayer>(Object.entries(data[0].timings));
-			localStorage.setItem('prayerTimes', JSON.stringify(Array.from(prayerMapping.entries())));
+	console.log('calling db...')
+	if (location !== null) {
+		const { data } = await supabase.from('prayer_timings').select().eq('location', location.replace(/\s/g, ''));
+		//if data is found and not expired return todays prayer times
+		if (data && data.length > 0) {
+			const expiresAt = moment(data[0].expires_at, 'DD-MM-YYYY');
+			const cd = moment(currentDate, 'DD-MM-YYYY');
+			if (cd <= expiresAt) {
+				const prayerMapping = new Map<string, DailyPrayer>(Object.entries(data[0].timings));
+				localStorage.setItem('prayerTimes', JSON.stringify(Array.from(prayerMapping.entries())));
 
-			return prayerMapping.get(currentDate);
+				return prayerMapping.get(currentDate);
+			}
 		}
 	}
 	return undefined;
 };
 const storePrayerTimesInDB = async (prayerMapping: Map<string, DailyPrayer>) => {
 	// store prayer times in db
-	const { data } = await supabase.from('prayer_timings').upsert([
-		{
-			location: location,
-			timings: Object.fromEntries(prayerMapping),
-			expires_at: moment().endOf('month').format('DD-MM-YYYY')
-		}
-	]);
-	return data;
+	if (location !== null) {
+		const { data } = await supabase.from('prayer_timings').upsert([
+			{
+				location: location.replace(/\s/g, ''),
+				timings: Object.fromEntries(prayerMapping),
+				expires_at: moment().endOf('month').format('DD-MM-YYYY')
+			}
+		]);
+		return data;
+	}
 };
 
 const getPrayerTimesFromApi = async (): Promise<Map<string, DailyPrayer>> => {
 	console.log('CALLING PRAYER API...');
 	const nextMonthYear = nextMonth === '01' ? moment(currentYear).add(1, 'year').format('YYYY') : currentYear;
 	const urls = [
-		`${config.prayerApi(currentCity, currentCountry, currentYear, currentMonth).url}?location=${location}`,
-		`${config.prayerApi(currentCity, currentCountry, nextMonthYear, nextMonth).url}?location=${location}`
+		`${config.prayerApi(currentCity, currentCountry, currentYear, currentMonth).url}`,
+		`${config.prayerApi(currentCity, currentCountry, nextMonthYear, nextMonth).url}`
 	];
 
 	const requests = urls.map(url => fetch(url).then(response => response.json()));
@@ -215,8 +221,8 @@ const extractLocationInfo = (loc: any): Location => {
 
 const setCityStateCountry = () => {
 	const locationArray = location!.split('-');
-	currentCity = locationArray[0];
-	currentCountry = locationArray[2];
+	currentCity = locationArray[0].replace(/\s/g, '');
+	currentCountry = locationArray[2].replace(/\s/g, '');
 };
 
 // Function to convert time to  12-hour format

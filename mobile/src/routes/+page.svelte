@@ -1,29 +1,30 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import moment, { type Moment } from 'moment';
+	import moment from 'moment';
 	import type { DailyPrayer } from '../types/DailyPrayer';
 	import { getPrayerTimes } from './components/getPrayerTimes';
 	import type { TodaysPrayer } from '../types/DailyPrayer';
 	import { Capacitor } from '@capacitor/core';
 	import type { NotificationType, Notifications } from '../types/Notifications';
 	import emblaCarouselSvelte from 'embla-carousel-svelte';
-	import newNight from '../assets/newnight.png';
 	import silent2 from '../assets/icons8-no-audio-50-red.png';
 	import minaret from '../assets/icons8-minaret-64.png';
 	import loc from '../assets/loc.png';
 	import leftIcon from '../assets/leftWhite.png';
 	import rightIcon from '../assets/rightWhite.png';
 	import beep from '../assets/beep.png';
+	import bg3 from '../assets/backgrounds/bg2.png';
 	import { LocalNotifications } from '@capacitor/local-notifications';
 	import { fade } from 'svelte/transition';
 
 	/*
-		TODO: Test Audio for Notifications scheduled
-		TODO: Test Fake Scheduled Notifications
-		TODO: Test Real Scheduled Notifications
-		TODO: Check Permissions if it returns prompt we havent asked for permissions and prompt them with the modal
-		TODO: Settings Page for manual location setting
-		TODO: NavBar color change
+		TODO IOS testing
+		- check if notifications are working
+		- if not just do silent notifcations only
+		- get app screenshots
+		- deploy on ios
+		TODO icon for IOS
+		TODO remove console logs
 	*/
 
 	let showAlert = false;
@@ -34,12 +35,12 @@
 	let plugins: any = [];
 
 	let prayerTimes: DailyPrayer | undefined;
-	let currentCity: string, currentState: string, currentCountry: string;
+	// let currentCity: string, currentState: string, currentCountry: string;
 	let loading: boolean = true;
 	let errorState: boolean = false;
 	let currentDate: string = moment().format('dddd, MMMM Do YYYY');
 	let nextPrayer: string, nextPrayerTime: string;
-	let cleanHijriDateString: string;
+	// let cleanHijriDateString: string;
 	let intervalId: any;
 	let timeRemaining: string;
 	let todayFinished: boolean = false;
@@ -51,9 +52,11 @@
 		maghrib: { time: '', notification: 'Athan' },
 		isha: { time: '', notification: 'Athan' }
 	};
-	let prayerObject: { [key: string]: DailyPrayer } = {};
+	// let prayerObject: { [key: string]: DailyPrayer } = {};
+	let prayerMapping = new Map<string, DailyPrayer>();
 	let notificationSettings: Notifications;
-	let notificationPrayerObject: { [key: string]: DailyPrayer } = {};
+	let notificationPrayerMap = new Map<string, DailyPrayer>();
+	let currentLocationString: string;
 
 	const onInit = (event: any) => {
 		emblaApi = event.detail;
@@ -71,9 +74,14 @@
 	};
 	const setCityStateCountry = (location: string) => {
 		const locationArray = location!.split('-');
-		currentCity = locationArray[0];
-		currentState = locationArray[1];
-		currentCountry = locationArray[2];
+		// currentCity = locationArray[0];
+		// currentState = locationArray[1];
+		// currentCountry = locationArray[2];
+		if (locationArray[0] === locationArray[2]) {
+			currentLocationString = capitalizeFirstLetter(locationArray[0]);
+		} else {
+			currentLocationString = `${capitalizeFirstLetter(locationArray[0])}, ${capitalizeFirstLetter(locationArray[2])}`;
+		}
 	};
 
 	const capitalizeFirstLetter = (str: string): string => {
@@ -83,6 +91,7 @@
 
 	//format the hijri date
 	const cleanHijriDate = (str: string | undefined) => {
+		if (str === undefined) return '';
 		const dArray = str!.split('-');
 		return `${dArray[0]}, ${dArray[2]}`;
 	};
@@ -103,6 +112,7 @@
 		if (nextPrayer === undefined) {
 			todayFinished = true;
 			const nextDayPrayer = await getPrayerTimes(moment().add(1, 'days').format('DD-MM-YYYY'));
+			console.log('next day prayer', nextDayPrayer, 'next day prayer');
 			nextPrayer = 'Fajr';
 			nextPrayerTime = nextDayPrayer?.fajr!;
 			updateTimeRemaining();
@@ -130,7 +140,6 @@
 
 	const handleNotificationsButtonClick = async (prayer: string) => {
 		const currentNotificationType: NotificationType = notificationSettings[prayer];
-		console.log(currentNotificationType, 'currentNotificationType');
 		let newNotificationType: NotificationType;
 		switch (currentNotificationType) {
 			case 'Athan':
@@ -158,7 +167,7 @@
 			newNotificationType as NotificationType;
 
 		//update the notification schedule
-		await setNotificationSchedule(notificationPrayerObject);
+		await setNotificationSchedule(notificationPrayerMap);
 	};
 
 	const removeModalAlert = () => {
@@ -181,34 +190,89 @@
 		clearInterval(intervalId);
 	});
 
+	// const prayerTimesObject = async () => {
+	// 	prayerObject[`Today, ${moment().format('MMMM Do YYYY')}`] = prayerTimes!;
+	// 	//set future prayer times
+	// 	for (let i = 1; i <= 6; i++) {
+	// 		const nextDate = moment().add(i, 'days').format('DD-MM-YYYY');
+	// 		const nextPrayerTimes = await getPrayerTimes(nextDate);
+	// 		prayerObject[moment(nextDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY')] = nextPrayerTimes!;
+	// 	}
+	// 	// console.log(JSON.stringify(prayerObject), 'prayerObject from times');
+
+	// 	//set the notification schedule
+	// 	notificationPrayerObject = prayerObject;
+	// 	await setNotificationSchedule(notificationPrayerObject);
+
+	// 	//set previous prayer times
+	// 	let prevPrayerObject: { [key: string]: DailyPrayer } = {};
+	// 	for (let i = 1; i <= 6; i++) {
+	// 		const prevDate = moment().subtract(i, 'days').format('DD-MM-YYYY');
+	// 		const nextPrayerTimes = await getPrayerTimes(prevDate);
+	// 		prevPrayerObject[moment(prevDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY')] =
+	// 			nextPrayerTimes!;
+	// 		if (moment(prevDate, 'DD-MM-YYYY').date() === 1) {
+	// 			break;
+	// 		}
+	// 	}
+	// 	const reversedPrevPrayerObject = Object.fromEntries(Object.entries(prevPrayerObject).reverse());
+	// 	prayerObject = { ...prayerObject, ...reversedPrevPrayerObject };
+
+	// 	// set index to today key
+	// 	options.startIndex = Object.keys(prayerObject).indexOf(
+	// 		`Today, ${moment().format('MMMM Do YYYY')}`
+	// 	);
+	// 	console.log(prayerObject, 'prayerObject from times');
+	// };
+
 	const prayerTimesObject = async () => {
-		prayerObject[`Today, ${moment().format('MMMM Do YYYY')}`] = prayerTimes!;
-		//set future prayer times
+		// Set previous prayer times
+		let currentMonth = moment().month();
+		for (let i = 1; i <= 6; i++) {
+			// const prevDate = moment().subtract(i, 'days').format('DD-MM-YYYY');
+			const prevDate = moment().subtract(i, 'days');
+
+			if (prevDate.month() !== currentMonth || prevDate.date() === 1) {
+				break;
+			}
+			const formattedPrevDate = prevDate.format('DD-MM-YYYY');
+			const nextPrayerTimes = await getPrayerTimes(formattedPrevDate);
+			prayerMapping.set(
+				moment(formattedPrevDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY'),
+				nextPrayerTimes!
+			);
+		}
+
+		// Reverse the prayerMapping
+		const reversedPrayerMapping = new Map([...prayerMapping.entries()].reverse());
+		prayerMapping = reversedPrayerMapping;
+
+		// Add today's prayer times to the set
+		const futureMap = new Map<string, DailyPrayer>();
+		const today = `Today, ${moment().format('MMMM Do YYYY')}`;
+		futureMap.set(today, prayerTimes!);
+
+		// Set future prayer times
 		for (let i = 1; i <= 6; i++) {
 			const nextDate = moment().add(i, 'days').format('DD-MM-YYYY');
 			const nextPrayerTimes = await getPrayerTimes(nextDate);
-			prayerObject[moment(nextDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY')] = nextPrayerTimes!;
+			futureMap.set(moment(nextDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY'), nextPrayerTimes!);
 		}
-		console.log(JSON.stringify(prayerObject), 'prayerObject from times');
 
-		//set the notification schedule
-		notificationPrayerObject = prayerObject;
-		await setNotificationSchedule(notificationPrayerObject);
+		// Set the notification schedule so anytime the user changes notifaication settings it updates the local notifications
+		notificationPrayerMap = new Map(futureMap.entries());
+		await setNotificationSchedule(notificationPrayerMap);
 
-		//set previous prayer times
-		let prevPrayerObject: { [key: string]: DailyPrayer } = {};
-		for (let i = 1; i <= 6; i++) {
-			const prevDate = moment().subtract(i, 'days').format('DD-MM-YYYY');
-			const nextPrayerTimes = await getPrayerTimes(prevDate);
-			prevPrayerObject[moment(prevDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY')] =
-				nextPrayerTimes!;
-			if (moment(prevDate, 'DD-MM-YYYY').date() === 1) {
-				break;
-			}
+		// let prevPrayerMap = new Map();
+
+		// Merge previous prayer times into the main map
+		for (const [key, value] of futureMap) {
+			prayerMapping.set(key, value);
 		}
-		const reversedPrevPrayerObject = Object.fromEntries(Object.entries(prevPrayerObject).reverse());
-		prayerObject = { ...prayerObject, ...reversedPrevPrayerObject };
-		console.log(prayerObject, 'prayerObject');
+
+		const index = Array.from(prayerMapping.keys()).indexOf(today);
+		options.startIndex = index;
+		console.log(prayerMapping, 'prayerMap from times');
 	};
 
 	const prepareData = () => {
@@ -237,30 +301,30 @@
 		}
 	};
 
-	const setNotificationSchedule = async (futurePrayers: {
-		[key: string]: DailyPrayer;
-	}): Promise<void> => {
+	const setNotificationSchedule = async (
+		futurePrayers: Map<string, DailyPrayer>
+	): Promise<void> => {
 		try {
 			const checkPermissions = await LocalNotifications.checkPermissions();
 			//only schedule notifications if the user has granted permissions
 			console.log(JSON.stringify(checkPermissions.display), '3213213213213213321321312');
 			if (checkPermissions.display === 'granted') {
 				await cancelNotifications();
+				//TODO remove this fake data
+				// futurePrayers.clear();
+				// futurePrayers.set('Today, March 27th 2024', {
+				// 	hijriMonth: 'Ramaḍān',
+				// 	hijriDate: '12-09-1445',
+				// 	fajr: '10:35 PM',
+				// 	sunrise: '10:36 PM',
+				// 	dhuhr: '10:08 PM',
+				// 	asr: '10:11 PM',
+				// 	maghrib: '10:12 PM',
+				// 	isha: '10:15 PM'
+				// });
 				console.log(futurePrayers, 'futurePrayers');
-				futurePrayers = {
-					'Today, March 27th 2024': {
-						hijriMonth: 'Ramaḍān',
-						hijriDate: '12-09-1445',
-						fajr: '10:35 PM',
-						sunrise: '10:36 PM',
-						dhuhr: '10:08 PM',
-						asr: '10:11 PM',
-						maghrib: '10:12 PM',
-						isha: '10:15 PM'
-					}
-				};
 				const notifications: { title: string; body: string; id: number }[] = [];
-				for (const [date, prayerTimes] of Object.entries(futurePrayers)) {
+				for (const [date, prayerTimes] of futurePrayers) {
 					const actualDate = date.startsWith('Today') ? moment().format('dddd MMMM Do YYYY') : date;
 					for (const [prayer, time] of Object.entries(prayerTimes)) {
 						if (prayer === 'hijriDate' || prayer === 'hijriMonth') continue;
@@ -285,8 +349,8 @@
 				console.log(notifications, 'notifications');
 				// // Schedule the notifications
 				await LocalNotifications.schedule({ notifications });
-				const nots = await LocalNotifications.getPending();
-				console.log(JSON.stringify(nots.notifications), 'notshahadnsamdsajd');
+				// const nots = await LocalNotifications.getPending();
+				// console.log(JSON.stringify(nots.notifications), 'notshahadnsamdsajd');
 			}
 		} catch (error) {
 			console.error('error', error);
@@ -309,10 +373,11 @@
 		const permissions = await LocalNotifications.checkPermissions();
 		if (permissions.display === 'prompt') {
 			//set flag to show modal component where it asks for permissions
-			const permissions = await LocalNotifications.requestPermissions();
+			await LocalNotifications.requestPermissions();
 		}
 
 		prayerTimes = await getPrayerTimes(moment().format('DD-MM-YYYY'));
+		console.log(prayerTimes, ' the PRayer times ');
 		const getNoti: string | null = localStorage.getItem('notificationSettings');
 		if (getNoti === null) {
 			notificationSettings = {
@@ -342,17 +407,16 @@
 		? 'calc(100vh - (94px + env(safe-area-inset-bottom)))'
 		: 'calc(100vh - (94px + 20px))'}"
 >
-	<!-- <video class="absolute top-0 left-0 w-full bg-cover -z-10" autoplay muted loop src={nightA} /> -->
 	<img
-		src={newNight}
+		src={bg3}
 		alt="night-sky-background"
 		class="absolute top-0 left-0 w-full object-fill -z-10"
 		style="height: {Capacitor.getPlatform() === 'ios'
 			? 'calc(100vh - (64px + env(safe-area-inset-bottom)))'
 			: 'calc(100vh - (64px + 20px))'}"
 	/>
+
 	<div>
-		<!-- <div class="w-full flex-grow bg-[radial-gradient(#ffffff33_1px,#00091d_1px)] bg-[size:20px_20px]"> -->
 		{#if loading}
 			<span class="loading loading-spinner loading-lg"></span>
 		{:else if errorState}
@@ -361,10 +425,9 @@
 			<div class="flex justify-between mb-6 ml-2 mr-2 text-white">
 				<h3 class="font-bold">Prayers</h3>
 				<div class="flex">
-					<img class="w-6 h-6 white mr-1" src={loc} alt="Location" />
+					<img class="w-6 h-6 mr-1" src={loc} alt="Location" />
 					<h3 class="font-serif">
-						{capitalizeFirstLetter(currentCity)},
-						{capitalizeFirstLetter(currentCountry)}
+						{capitalizeFirstLetter(currentLocationString)}
 					</h3>
 				</div>
 			</div>
@@ -401,7 +464,8 @@
 
 			<div class="embla pt-6" use:emblaCarouselSvelte={{ options, plugins }} on:emblaInit={onInit}>
 				<div class="embla__container">
-					{#each Object.entries(prayerObject) as [date, prayerTimes]}
+					<!-- {#each Object.entries(prayerObject) as [date, prayerTimes]} -->
+					{#each prayerMapping as [date, prayerTimes]}
 						<div class="embla__slide">
 							<div class="flex mb-4 text-center">
 								<button class="embla__prev" style="flex: 0.5" on:click={scrollPrev}
