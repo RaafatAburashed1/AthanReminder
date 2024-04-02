@@ -190,41 +190,6 @@
 		clearInterval(intervalId);
 	});
 
-	// const prayerTimesObject = async () => {
-	// 	prayerObject[`Today, ${moment().format('MMMM Do YYYY')}`] = prayerTimes!;
-	// 	//set future prayer times
-	// 	for (let i = 1; i <= 6; i++) {
-	// 		const nextDate = moment().add(i, 'days').format('DD-MM-YYYY');
-	// 		const nextPrayerTimes = await getPrayerTimes(nextDate);
-	// 		prayerObject[moment(nextDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY')] = nextPrayerTimes!;
-	// 	}
-	// 	// console.log(JSON.stringify(prayerObject), 'prayerObject from times');
-
-	// 	//set the notification schedule
-	// 	notificationPrayerObject = prayerObject;
-	// 	await setNotificationSchedule(notificationPrayerObject);
-
-	// 	//set previous prayer times
-	// 	let prevPrayerObject: { [key: string]: DailyPrayer } = {};
-	// 	for (let i = 1; i <= 6; i++) {
-	// 		const prevDate = moment().subtract(i, 'days').format('DD-MM-YYYY');
-	// 		const nextPrayerTimes = await getPrayerTimes(prevDate);
-	// 		prevPrayerObject[moment(prevDate, 'DD-MM-YYYY').format('dddd, MMMM Do YYYY')] =
-	// 			nextPrayerTimes!;
-	// 		if (moment(prevDate, 'DD-MM-YYYY').date() === 1) {
-	// 			break;
-	// 		}
-	// 	}
-	// 	const reversedPrevPrayerObject = Object.fromEntries(Object.entries(prevPrayerObject).reverse());
-	// 	prayerObject = { ...prayerObject, ...reversedPrevPrayerObject };
-
-	// 	// set index to today key
-	// 	options.startIndex = Object.keys(prayerObject).indexOf(
-	// 		`Today, ${moment().format('MMMM Do YYYY')}`
-	// 	);
-	// 	console.log(prayerObject, 'prayerObject from times');
-	// };
-
 	const prayerTimesObject = async () => {
 		// Set previous prayer times
 		let currentMonth = moment().month();
@@ -287,7 +252,6 @@
 			const location = localStorage.getItem('location');
 			setCityStateCountry(location!);
 			findNextPrayer();
-			// cleanHijriDate(prayerTimes?.hijriDate);
 			//update time remaining unti next prayer every 3 seconds
 			updateTimeRemaining();
 			intervalId = setInterval(updateTimeRemaining, 3000);
@@ -418,7 +382,33 @@
 
 	<div>
 		{#if loading}
-			<span class="loading loading-spinner loading-lg"></span>
+			<!-- Skeleton for the header -->
+			<div class="flex justify-between mb-6 ml-2 mr-2 bg">
+				<div class="skeleton w-32 h-6"></div>
+				<div class="flex">
+					<div class="skeleton w-32 h-6"></div>
+				</div>
+			</div>
+
+			<!-- Skeleton for the prayer details -->
+			<div class="w-full glass backdrop-blur-none pt-4 pb-4 mb-10 pr-2">
+				<article class="flex flex-row ml-2 items-center pt-2 pb-2">
+					<div class="skeleton w-full h-10"></div>
+				</article>
+				<article class="flex flex-row ml-3 items-center mt-3">
+					<div class="skeleton w-full h-10"></div>
+				</article>
+			</div>
+
+			<!-- Skeleton for the carousel -->
+			<div class=" pt-6">
+				<div class="flex mb-4 text-center">
+					<div class="skeleton w-full h-10 mx-2"></div>
+				</div>
+				<div class="flex w-full justify-center align-middle">
+					<div class="skeleton w-11/12 h-96"></div>
+				</div>
+			</div>
 		{:else if errorState}
 			<div>Error...</div>
 		{:else}
@@ -464,7 +454,6 @@
 
 			<div class="embla pt-6" use:emblaCarouselSvelte={{ options, plugins }} on:emblaInit={onInit}>
 				<div class="embla__container">
-					<!-- {#each Object.entries(prayerObject) as [date, prayerTimes]} -->
 					{#each prayerMapping as [date, prayerTimes]}
 						<div class="embla__slide">
 							<div class="flex mb-4 text-center">

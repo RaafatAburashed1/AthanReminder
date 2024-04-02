@@ -105,8 +105,7 @@
 		localStorage.setItem('location', currentLocation);
 		localStorage.removeItem('prayerTimes');
 		await getPrayerTimes(moment().format('DD-MM-YYYY'));
-		alert('Location saved');
-		// window.location.reload();
+		window.location.reload();
 	};
 
 	onMount(() => {
