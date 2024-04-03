@@ -26,6 +26,7 @@
 	let hideStatesField = false;
 	let alertMessage = '';
 	let showAlert = false;
+	let isSaveLoading = false;
 
 	$: if (selectedCountry || selectedState) {
 		hideCitiesField = false;
@@ -56,7 +57,7 @@
 		if (state === 'Select a State' || country === 'Select a Country') return;
 		selectedCity = 'Select a City';
 		cities = getCitiesOfState(country.isoCode, state.isoCode);
-		console.log(cities, 'cities');
+		console.log('HELlo', 'cities');
 		if (cities.length === 0) {
 			hideCitiesField = true;
 		}
@@ -109,6 +110,7 @@
 	};
 
 	onMount(() => {
+		console.log('INSIDE THE ON MOUNT');
 		loading = true;
 		currentLocation = localStorage.getItem('location');
 		if (!currentLocation) {
@@ -120,6 +122,7 @@
 		} else {
 			currentLocationString = `${capitalizeFirstLetter(currentLocationArray[0])}, ${capitalizeFirstLetter(currentLocationArray[2])}`;
 		}
+		console.log(currentLocationString, 'csting');
 		countries = getAllCountries();
 		console.log(countries.length, 'countries');
 		selectedCountry = 'Select a Country';
@@ -162,7 +165,6 @@
 		<div class="flex mb-4">
 			<AutoComplete
 				className="w-full ml-2 mr-2 rounded-md"
-				inputClassName=""
 				items={countries}
 				bind:selectedItem={selectedCountry}
 				onChange={() => selectCountry(selectedCountry)}
@@ -198,9 +200,14 @@
 		{/if}
 
 		<button
-			class=" ml-2 mr-2 text-white"
+			class="btn ml-2 mr-2 text-white"
 			style="background-color: #009589;"
-			on:click={() => submitLocationButton()}>Save</button
+			on:click={() => submitLocationButton()}
+		>
+			{#if isSaveLoading}
+				<span class="loading loading-spinner"></span>
+			{/if}
+			Save</button
 		>
 		{#if showAlert}
 			<div

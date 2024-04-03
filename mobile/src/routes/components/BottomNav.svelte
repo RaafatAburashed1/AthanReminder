@@ -11,13 +11,16 @@
 	function handleButtonClick(buttonId: number) {
 		activeButton = buttonId;
 		if (buttonId === 1) {
+			console.log('before goto homes');
 			goto('/');
 		} else {
+			console.log('before goto settings');
 			goto('/settings');
 		}
 	}
 	onMount(() => {
-		activeButton = currentPath === '/' ? 1 : 2;
+		// activeButton = currentPath === '/' ? 1 : 2;
+		activeButton = 1;
 	});
 </script>
 

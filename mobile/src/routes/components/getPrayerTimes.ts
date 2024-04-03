@@ -56,7 +56,7 @@ export const getPrayerTimes = async (cd: string): Promise<DailyPrayer | undefine
 		console.log('returning from api ', prayerTimesFromApi.get(currentDate))
 		return prayerTimesFromApi.get(currentDate);
 	} catch (error) {
-		console.log(error, 'error');
+		console.log(JSON.stringify(error), 'error from getPRayerTimes');
 		return undefined;
 	}
 };
@@ -164,31 +164,37 @@ const getPrayerTimesFromApi = async (): Promise<Map<string, DailyPrayer>> => {
 	return prayerMapping;
 };
 
-const getCurrentLocationFromApi = async (): Promise<string> => {
-	console.log('CALLING LOC API...');
-	const cachedLocaction = localStorage.getItem('location');
-	if (cachedLocaction !== null) return cachedLocaction;
+const getCurrentLocationFromApi = async (): Promise<any> => {
+	try {
+		console.log('CALLING LOC API...');
+		const cachedLocaction = localStorage.getItem('location');
+		if (cachedLocaction !== null) return cachedLocaction;
 
-	const coordinates = await Geolocation.getCurrentPosition();
+		const coordinates = await Geolocation.getCurrentPosition();
+		console.log('before fetch response')
+		const response = await fetch(
+			`${config.googleApi(coordinates.coords.latitude, coordinates.coords.longitude).url}`
+		);
+		console.log('after response')
+		const data = await response.json();
+		if (data.status !== 'OK') throw new Error('Error fetching location');
 
-	const response = await fetch(
-		`${config.googleApi(coordinates.coords.latitude, coordinates.coords.longitude).url}`
-	);
-	const data = await response.json();
-	if (data.status !== 'OK') throw new Error('Error fetching location');
+		const getLocation = extractLocationInfo(data);
+		// const getLocation = extractLocationInfo(test);
 
-	const getLocation = extractLocationInfo(data);
-	// const getLocation = extractLocationInfo(test);
+		//combine to unique string and store it in local storage
+		const combinedLocation = `${getLocation.city}-${getLocation.state}-${getLocation.country}`
+			.toLowerCase()
+			.split(' ')
+			.join('');
 
-	//combine to unique string and store it in local storage
-	const combinedLocation = `${getLocation.city}-${getLocation.state}-${getLocation.country}`
-		.toLowerCase()
-		.split(' ')
-		.join('');
+		localStorage.setItem('location', combinedLocation);
 
-	localStorage.setItem('location', combinedLocation);
+		return combinedLocation;
+	} catch (err) {
+		console.log(JSON.stringify(err), " ERROR From currentlocation ")
+	}
 
-	return combinedLocation;
 };
 
 const extractLocationInfo = (loc: any): Location => {

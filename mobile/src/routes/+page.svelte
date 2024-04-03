@@ -237,7 +237,7 @@
 
 		const index = Array.from(prayerMapping.keys()).indexOf(today);
 		options.startIndex = index;
-		console.log(prayerMapping, 'prayerMap from times');
+		// console.log(prayerMapping, 'prayerMap from times');
 	};
 
 	const prepareData = () => {
@@ -275,17 +275,17 @@
 			if (checkPermissions.display === 'granted') {
 				await cancelNotifications();
 				//TODO remove this fake data
-				// futurePrayers.clear();
-				// futurePrayers.set('Today, March 27th 2024', {
-				// 	hijriMonth: 'Ramaḍān',
-				// 	hijriDate: '12-09-1445',
-				// 	fajr: '10:35 PM',
-				// 	sunrise: '10:36 PM',
-				// 	dhuhr: '10:08 PM',
-				// 	asr: '10:11 PM',
-				// 	maghrib: '10:12 PM',
-				// 	isha: '10:15 PM'
-				// });
+				futurePrayers.clear();
+				futurePrayers.set('Today, April 2nd 2024', {
+					hijriMonth: 'Ramaḍān',
+					hijriDate: '12-09-1445',
+					fajr: '5:06 AM',
+					sunrise: '10:36 PM',
+					dhuhr: '10:08 PM',
+					asr: '10:11 PM',
+					maghrib: '10:12 PM',
+					isha: '10:15 PM'
+				});
 				console.log(futurePrayers, 'futurePrayers');
 				const notifications: { title: string; body: string; id: number }[] = [];
 				for (const [date, prayerTimes] of futurePrayers) {

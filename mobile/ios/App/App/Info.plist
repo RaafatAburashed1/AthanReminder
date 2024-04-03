@@ -49,5 +49,13 @@
 	<array>
 		<string>com.athanreminder.app.background</string>
 	</array>
+
+	<key>NSLocationAlwaysUsageDescription</key>
+		<string>Location is required to determine your local prayer times.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Location is required to determine your local prayer times.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Location is required to determine your local prayer times.</string>
+
 </dict>
 </plist>

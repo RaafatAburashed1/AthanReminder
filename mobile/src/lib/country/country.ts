@@ -1,6 +1,9 @@
 import countryJSON from './country.json';
 import stateJSON from './states.json';
-import cityList from './cities.json';
+import cityRange1 from './cities/cityRange1.json';
+import cityRange2 from './cities/cityRange2.json';
+import cityRange3 from './cities/cityRange3.json';
+import cityRange4 from './cities/cityRange4.json';
 import type { ICity, ICountry, IState } from '../../types/Country';
 import { compare, convertArrayToObject } from './util';
 
@@ -23,7 +26,7 @@ export function getCitiesOfState(countryCode: string, stateCode: string): ICity[
     if (!stateCode) return [];
     if (!countryCode) return [];
 
-    const cityList = getAllCities();
+    const cityList = getAllCities(countryCode);
     const cities = (cityList as ICity[]).filter((value: { countryCode: string; stateCode: string }) => {
         return value.countryCode === countryCode && value.stateCode === stateCode;
     });
@@ -37,14 +40,27 @@ const KEYS = [
     "stateCode",
 ]
 
-let convertedCityList: ICity[] = [];
 // Get a list of all cities.
-function getAllCities(keys: string[] = KEYS): ICity[] {
-    if (convertedCityList.length) {
-        return convertedCityList;
+function getAllCities(countryCode: string): ICity[] {
+    let convertedCityList: ICity[] = [];
+    const keys: string[] = KEYS;
+    console.log('countryCode', countryCode, " getting all cities", convertedCityList, "keys");
+    let cityJSON: string[][];
+    if (countryCode >= 'AD' && countryCode <= 'DO') {
+        console.log('cityRange1');
+        cityJSON = cityRange1;
+    } else if (countryCode >= 'DZ' && countryCode <= 'LA') {
+        console.log('cityRange2');
+        cityJSON = cityRange2;
+    } else if (countryCode >= 'LB' && countryCode <= 'RO') {
+        console.log('cityRange3');
+        cityJSON = cityRange3;
+    } else {
+        console.log('cityRange4');
+        cityJSON = cityRange4;
     }
 
-    const cityJSON: string[][] = cityList;
+    // const cityJSON: string[][] = cityList;
     convertedCityList = convertArrayToObject(keys ?? KEYS, cityJSON);
     return (convertedCityList as unknown as ICity[])
 }
