@@ -75,16 +75,19 @@
 		if (selectedCountry === 'Select a Country') {
 			alertMessage = 'Please select a country';
 			showAlert = true;
+			isSaveLoading = false;
 			return;
 		}
 		if (selectedState === 'Select a State' && !hideStatesField) {
 			alertMessage = 'Please select a state';
 			showAlert = true;
+			isSaveLoading = false;
 			return;
 		}
 		if (selectedCity === 'Select a City' && !hideCitiesField && !hideStatesField) {
 			alertMessage = 'Please select a city';
 			showAlert = true;
+			isSaveLoading = false;
 			return;
 		}
 
