@@ -44,7 +44,6 @@
 
 		//reset other fields
 		states = getStatesOfCountry(country.isoCode);
-		console.log(states, 'states');
 
 		if (states.length === 0) {
 			hideStatesField = true;
@@ -57,7 +56,6 @@
 		if (state === 'Select a State' || country === 'Select a Country') return;
 		selectedCity = 'Select a City';
 		cities = getCitiesOfState(country.isoCode, state.isoCode);
-		console.log('HELlo', 'cities');
 		if (cities.length === 0) {
 			hideCitiesField = true;
 		}
@@ -73,6 +71,7 @@
 	};
 
 	const submitLocationButton = async () => {
+		isSaveLoading = true;
 		if (selectedCountry === 'Select a Country') {
 			alertMessage = 'Please select a country';
 			showAlert = true;
@@ -95,14 +94,12 @@
 			const city = selectedCity.name.toLowerCase();
 			state = selectedState.name.toLowerCase();
 			currentLocation = `${city}-${state}-${country}`;
-			console.log(country, ' string ', state, ' state ', city);
 		} else if (hideStatesField) {
 			currentLocation = `${country}-${country}-${country}`;
 		} else {
 			state = selectedState.name.toLowerCase();
 			currentLocation = `${state}-${state}-${country}`;
 		}
-		console.log(currentLocation);
 		localStorage.setItem('location', currentLocation);
 		localStorage.removeItem('prayerTimes');
 		await getPrayerTimes(moment().format('DD-MM-YYYY'));
@@ -110,21 +107,18 @@
 	};
 
 	onMount(() => {
-		console.log('INSIDE THE ON MOUNT');
 		loading = true;
 		currentLocation = localStorage.getItem('location');
 		if (!currentLocation) {
 			currentLocation = 'Location unknown';
 		}
 		currentLocationArray = currentLocation.split('-');
-		if (currentLocation[0] === currentLocation[2]) {
+		if (currentLocationArray[0] === currentLocationArray[2]) {
 			currentLocationString = capitalizeFirstLetter(currentLocationArray[0]);
 		} else {
 			currentLocationString = `${capitalizeFirstLetter(currentLocationArray[0])}, ${capitalizeFirstLetter(currentLocationArray[2])}`;
 		}
-		console.log(currentLocationString, 'csting');
 		countries = getAllCountries();
-		console.log(countries.length, 'countries');
 		selectedCountry = 'Select a Country';
 		loading = false;
 	});
@@ -141,8 +135,8 @@
 		alt="night-sky-background"
 		class="absolute top-0 left-0 w-full object-fill -z-10"
 		style="height: {Capacitor.getPlatform() === 'ios'
-			? 'calc(100vh - (64px + env(safe-area-inset-bottom)))'
-			: 'calc(100vh - (64px + 20px))'}"
+			? 'calc(100vh - (44px + env(safe-area-inset-bottom)))'
+			: 'calc(100vh - (44px + 20px))'}"
 	/>
 	{#if !loading}
 		<div

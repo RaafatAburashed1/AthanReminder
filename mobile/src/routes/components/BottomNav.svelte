@@ -3,24 +3,22 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { Capacitor } from '@capacitor/core';
-
+	import { activeButton } from '$lib/stores/activeButton';
 	let currentPath: string;
 	$: currentPath = $page.url.pathname;
-	let activeButton: number;
+	// let activeButton: number;
 
 	function handleButtonClick(buttonId: number) {
-		activeButton = buttonId;
+		// activeButton = buttonId;
+		activeButton.set(buttonId);
 		if (buttonId === 1) {
-			console.log('before goto homes');
 			goto('/');
 		} else {
-			console.log('before goto settings');
 			goto('/settings');
 		}
 	}
 	onMount(() => {
 		// activeButton = currentPath === '/' ? 1 : 2;
-		activeButton = 1;
 	});
 </script>
 
@@ -28,13 +26,13 @@
 	<div
 		class="btm-nav"
 		style="margin-bottom: {Capacitor.getPlatform() === 'ios'
-			? 'env(safe-area-inset-bottom)'
+			? 'calc(env(safe-area-inset-bottom) - 20px)'
 			: '15px'}"
 	>
 		<button
 			class="text-accent"
 			on:click={() => handleButtonClick(1)}
-			class:active={activeButton === 1}
+			class:active={$activeButton === 1}
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -53,7 +51,7 @@
 		<button
 			class="text-accent"
 			on:click={() => handleButtonClick(2)}
-			class:active={activeButton === 2}
+			class:active={$activeButton === 2}
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"

@@ -16,6 +16,8 @@
 	import bg3 from '../assets/backgrounds/bg2.png';
 	import { LocalNotifications } from '@capacitor/local-notifications';
 	import { fade } from 'svelte/transition';
+	import { goto } from '$app/navigation';
+	import { activeButton } from '$lib/stores/activeButton';
 
 	/*
 		TODO IOS testing
@@ -60,9 +62,9 @@
 
 	const onInit = (event: any) => {
 		emblaApi = event.detail;
-		emblaApi.on('select', () => {
-			console.log('Slide changed to:', emblaApi.selectedScrollSnap());
-		});
+		// emblaApi.on('select', () => {
+		// 	console.log('Slide changed to:', emblaApi.selectedScrollSnap());
+		// });
 	};
 
 	const scrollPrev = () => {
@@ -112,7 +114,6 @@
 		if (nextPrayer === undefined) {
 			todayFinished = true;
 			const nextDayPrayer = await getPrayerTimes(moment().add(1, 'days').format('DD-MM-YYYY'));
-			console.log('next day prayer', nextDayPrayer, 'next day prayer');
 			nextPrayer = 'Fajr';
 			nextPrayerTime = nextDayPrayer?.fajr!;
 			updateTimeRemaining();
@@ -244,10 +245,12 @@
 		if (prayerTimes === undefined) {
 			errorState = true;
 			localStorage.clear();
+
 			//get them to manually set location
 			//TODO need to update the button to go to settings
 			//open a modal to handle manual location setting
-			// goto('/settings');
+			activeButton.set(2);
+			goto('/settings');
 		} else {
 			const location = localStorage.getItem('location');
 			setCityStateCountry(location!);
@@ -271,22 +274,8 @@
 		try {
 			const checkPermissions = await LocalNotifications.checkPermissions();
 			//only schedule notifications if the user has granted permissions
-			console.log(JSON.stringify(checkPermissions.display), '3213213213213213321321312');
 			if (checkPermissions.display === 'granted') {
 				await cancelNotifications();
-				//TODO remove this fake data
-				futurePrayers.clear();
-				futurePrayers.set('Today, April 2nd 2024', {
-					hijriMonth: 'Ramaḍān',
-					hijriDate: '12-09-1445',
-					fajr: '5:06 AM',
-					sunrise: '10:36 PM',
-					dhuhr: '10:08 PM',
-					asr: '10:11 PM',
-					maghrib: '10:12 PM',
-					isha: '10:15 PM'
-				});
-				console.log(futurePrayers, 'futurePrayers');
 				const notifications: { title: string; body: string; id: number }[] = [];
 				for (const [date, prayerTimes] of futurePrayers) {
 					const actualDate = date.startsWith('Today') ? moment().format('dddd MMMM Do YYYY') : date;
@@ -297,7 +286,7 @@
 						if (prayerTime.isAfter(moment())) {
 							const getNoti = getNotificationSetting(prayer);
 							const notificationType =
-								getNoti === 'Athan' ? 'adhan_makkah.wav' : getNoti === 'Beep' ? 'beep.wav' : '';
+								getNoti === 'Athan' ? 'adhan_makkah.wav' : getNoti === 'Beep' ? 'beep2.wav' : '';
 							//TODO allow while idle for Android https://forum.ionicframework.com/t/android-ionic-local-notifications-are-not-delivered-on-time/238986
 							const notification = {
 								title: `${capitalizeFirstLetter(prayer)} Prayer`,
@@ -310,7 +299,6 @@
 						}
 					}
 				}
-				console.log(notifications, 'notifications');
 				// // Schedule the notifications
 				await LocalNotifications.schedule({ notifications });
 				// const nots = await LocalNotifications.getPending();
@@ -341,7 +329,11 @@
 		}
 
 		prayerTimes = await getPrayerTimes(moment().format('DD-MM-YYYY'));
-		console.log(prayerTimes, ' the PRayer times ');
+		if (prayerTimes === undefined) {
+			activeButton.set(2);
+			goto('/settings');
+		}
+
 		const getNoti: string | null = localStorage.getItem('notificationSettings');
 		if (getNoti === null) {
 			notificationSettings = {
@@ -376,8 +368,8 @@
 		alt="night-sky-background"
 		class="absolute top-0 left-0 w-full object-fill -z-10"
 		style="height: {Capacitor.getPlatform() === 'ios'
-			? 'calc(100vh - (64px + env(safe-area-inset-bottom)))'
-			: 'calc(100vh - (64px + 20px))'}"
+			? 'calc(100vh - (44px + env(safe-area-inset-bottom)))'
+			: 'calc(100vh - (44px + 20px))'}"
 	/>
 
 	<div>

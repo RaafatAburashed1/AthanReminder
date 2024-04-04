@@ -44,19 +44,14 @@ const KEYS = [
 function getAllCities(countryCode: string): ICity[] {
     let convertedCityList: ICity[] = [];
     const keys: string[] = KEYS;
-    console.log('countryCode', countryCode, " getting all cities", convertedCityList, "keys");
     let cityJSON: string[][];
     if (countryCode >= 'AD' && countryCode <= 'DO') {
-        console.log('cityRange1');
         cityJSON = cityRange1;
     } else if (countryCode >= 'DZ' && countryCode <= 'LA') {
-        console.log('cityRange2');
         cityJSON = cityRange2;
     } else if (countryCode >= 'LB' && countryCode <= 'RO') {
-        console.log('cityRange3');
         cityJSON = cityRange3;
     } else {
-        console.log('cityRange4');
         cityJSON = cityRange4;
     }
 

@@ -38,6 +38,7 @@ export const getPrayerTimes = async (cd: string): Promise<DailyPrayer | undefine
 		// if location isnt cached retrieve it
 		if (location === null) {
 			location = await getCurrentLocationFromApi();
+			if (location === null) return undefined;
 		}
 
 		// set city, state and country from location
@@ -53,10 +54,9 @@ export const getPrayerTimes = async (cd: string): Promise<DailyPrayer | undefine
 		await storePrayerTimesInDB(prayerTimesFromApi);
 
 		// return todays prayer time
-		console.log('returning from api ', prayerTimesFromApi.get(currentDate))
 		return prayerTimesFromApi.get(currentDate);
 	} catch (error) {
-		console.log(JSON.stringify(error), 'error from getPRayerTimes');
+		console.log(JSON.stringify(error), 'error getting prayer times');
 		return undefined;
 	}
 };
@@ -86,7 +86,6 @@ const checkCacheForData = async (): Promise<DailyPrayer | undefined> => {
 };
 
 const getPrayerTimesFromDB = async (): Promise<DailyPrayer | undefined> => {
-	console.log('calling db...')
 	if (location !== null) {
 		const { data } = await supabase.from('prayer_timings').select().eq('location', location.replace(/\s/g, ''));
 		//if data is found and not expired return todays prayer times
@@ -118,7 +117,6 @@ const storePrayerTimesInDB = async (prayerMapping: Map<string, DailyPrayer>) => 
 };
 
 const getPrayerTimesFromApi = async (): Promise<Map<string, DailyPrayer>> => {
-	console.log('CALLING PRAYER API...');
 	const nextMonthYear = nextMonth === '01' ? moment(currentYear).add(1, 'year').format('YYYY') : currentYear;
 	const urls = [
 		`${config.prayerApi(currentCity, currentCountry, currentYear, currentMonth).url}`,
@@ -166,16 +164,14 @@ const getPrayerTimesFromApi = async (): Promise<Map<string, DailyPrayer>> => {
 
 const getCurrentLocationFromApi = async (): Promise<any> => {
 	try {
-		console.log('CALLING LOC API...');
 		const cachedLocaction = localStorage.getItem('location');
 		if (cachedLocaction !== null) return cachedLocaction;
-
+		const permissions = await Geolocation.requestPermissions();
+		if (permissions.location !== 'granted') return null;
 		const coordinates = await Geolocation.getCurrentPosition();
-		console.log('before fetch response')
 		const response = await fetch(
 			`${config.googleApi(coordinates.coords.latitude, coordinates.coords.longitude).url}`
 		);
-		console.log('after response')
 		const data = await response.json();
 		if (data.status !== 'OK') throw new Error('Error fetching location');
 
